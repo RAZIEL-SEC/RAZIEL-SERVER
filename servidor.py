@@ -1,43 +1,33 @@
-from flask import Flask, request, send_file, render_template, redirect, url_for
+#atualizando o servidor.py
+
+from flask import Flask, request, render_template, redirect, url_for
 import os
+import werkzeug.utils
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = 'uploads'  # Pasta para uploads
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limite de 16MB por arquivo
 
-# Pasta onde os arquivos serão salvos
+# Certifique-se de que a pasta de uploads existe
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
 
-UPLOAD_FOLDER = 'uploads'
-if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
-
-# Rota para a página inicial (interface web)
 @app.route('/')
 def index():
-    # Lista os arquivos na pasta uploads
-    files = os.listdir(UPLOAD_FOLDER)
-    return render_template('index.html', files=files)
+    return render_template('index.html')  # Mantém o visual original
 
-# Endpoint para upload de arquivos (via formulário web)
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    if 'files' not in request.files:
-        return redirect(url_for('index'))
-    files = request.files.getlist('files')  # Suporte a múltiplos arquivos
-    for file in files:
-        if file.filename == '':
-            continue
-        file_path = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(file_path)
-    return redirect(url_for('index'))
-
-# Endpoint para download de arquivos
-@app.route('/download/<filename>', methods=['GET'])
-def download_file(filename):
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    if os.path.exists(file_path):
-        return send_file(file_path, as_attachment=True)
-    else:
-        return 'Arquivo não encontrado', 404
+    if 'file' not in request.files:
+        return redirect(request.url)
+    file = request.files['file']
+    if file.filename == '':
+        return redirect(request.url)
+    if file:
+        filename = werkzeug.utils.secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return 'Arquivo enviado com sucesso!'
 
 if __name__ == '__main__':
-    # Executa o servidor em localhost:5000
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get('PORT', 6969))  # Porta dinâmica para hospedagem
+    app.run(host='0.0.0.0', port=port, debug=False)  # Roda em 0.0.0.0 para internet
