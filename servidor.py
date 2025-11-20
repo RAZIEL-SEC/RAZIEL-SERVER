@@ -1,4 +1,5 @@
 #atualizando o servidor.py
+#clonei o repo
 from flask import Flask, request, render_template, redirect, url_for
 import os
 import werkzeug.utils
